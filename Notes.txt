@@ -1,0 +1,44 @@
+# redundant
+def find_local_maxima_timepoints(dat_file_path):
+    try:
+        # Load data from the .dat file using numpy
+        data = np.loadtxt(dat_file_path)
+
+        # Extract timepoints and voltage intensities
+        timepoints = data[:, 0]
+        voltage_intensities = data[:, 1]
+
+        # Find local maxima indices
+        maxima_indices = [i for i in range(1, len(voltage_intensities)-1) if voltage_intensities[i] > voltage_intensities[i-1] and voltage_intensities[i] > voltage_intensities[i+1]]
+
+        # Get the timepoints corresponding to the local maxima
+        maxima_timepoints = timepoints[maxima_indices]
+
+        return maxima_timepoints
+
+    except FileNotFoundError:
+        print(f"File '{dat_file_path}' not found.")
+        return None
+    
+# Example usage:
+dat_file_path = './Resources/data/stimuli/gaussModality_co200.dat'  # Replace with the actual path to your .dat file
+
+maxima_timepoints_result = find_local_maxima_timepoints(dat_file_path)
+
+if maxima_timepoints_result is not None and len(maxima_timepoints_result) > 0:
+    # Use a custom format to display timepoints without scientific notation
+    formatted_timepoints = ["{:.2f}".format(tp) for tp in maxima_timepoints_result]
+    print(f"Timepoints corresponding to local maxima: {formatted_timepoints} ({len(formatted_timepoints)} total)")
+
+    # Optional: Plot the data with local maxima marked
+    data = np.loadtxt(dat_file_path)
+    plt.plot(data[:, 0], data[:, 1], label='Voltage Intensity')
+    plt.scatter(maxima_timepoints_result, data[:, 1][np.searchsorted(data[:, 0], maxima_timepoints_result)], color='red', label='Local Maxima')
+    plt.xlabel('Timepoints')
+    plt.ylabel('Voltage Intensity')
+    plt.legend()
+    plt.xlim(-.5e5, 1.05e6)
+    plt.show()
+
+else:
+    print("No local maxima found.")
