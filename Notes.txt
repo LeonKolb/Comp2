@@ -137,3 +137,34 @@ normalized_firing_rates = z_score_normalization(firing_rates)
 
 print("Original Firing Rates:", firing_rates)
 print("Normalized Firing Rates (Z-Score Normalization):", normalized_firing_rates)
+
+
+def parse_dat_to_json_old(dat_lines):
+    json_data = []
+    current_trial = []
+    for line in dat_lines:
+        if line.startswith("#"):
+            continue  # Ignore lines starting with "#"
+        elif line.strip() == "":
+            if current_trial:
+                json_data.append(current_trial)
+                current_trial = []
+            else:
+                json_data.append([])  # Add an empty sublist
+        else:
+            timestamp = float(line.strip())
+            current_trial.append(timestamp)
+
+    if current_trial:
+        json_data.append(current_trial)
+    result=[]
+    for sublist in json_data:
+        if sublist == []:
+            consecutive_empty_sublists += 1
+            if consecutive_empty_sublists <= 1:
+                result.append(sublist)
+        else:
+            result.append(sublist)
+            consecutive_empty_sublists = 0
+
+    return result
