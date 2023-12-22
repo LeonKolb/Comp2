@@ -106,3 +106,34 @@ def firing_prob(spikes, coherence, minHz, maxHz, dat): #dat ist bspw. ./03-01-16
     p = 1./(np.sqrt(2.*np.pi)*std)*np.exp(-(r - mean_rate)**2/(2.*std**2))
     p = p/np.sum(p)
     return r, p
+
+
+
+def min_max_scaling(data):
+    min_val = np.min(data)
+    max_val = np.max(data)
+    scaled_data = (data - min_val) / (max_val - min_val)
+    return scaled_data
+
+
+#scale to cutoff freq?
+rate_1 = min_max_scaling(rate_1)
+rate_2 = min_max_scaling(rate_2)
+
+print(rate_1)
+print(rate_2)
+
+
+
+def z_score_normalization(data):
+    mean_val = np.mean(data)
+    std_dev = np.std(data)
+    normalized_data = (data - mean_val) / std_dev
+    return normalized_data
+
+# Example usage:
+firing_rates = np.array([10, 15, 12, 8, 20])
+normalized_firing_rates = z_score_normalization(firing_rates)
+
+print("Original Firing Rates:", firing_rates)
+print("Normalized Firing Rates (Z-Score Normalization):", normalized_firing_rates)
