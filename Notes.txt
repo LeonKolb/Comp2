@@ -168,3 +168,99 @@ def parse_dat_to_json_old(dat_lines):
             consecutive_empty_sublists = 0
 
     return result
+
+
+old ROC curve:
+
+# make binary arrays representing hits for true and false positives
+
+def build_binary_array(data, condition):
+
+    binary_array = [1 if condition(value) else 0 for value in data]
+    return binary_array
+
+
+tp_test = build_binary_array(rate_1, lambda x: x > avg_rate_1)
+fp_test = build_binary_array(rate_2, lambda x: x > avg_rate_2)
+print(tp_test)
+print(fp_test)
+
+
+# Berechnung der Wahrscheinlichkeiten mit 
+# p[r > R] = (Anzahl der Trials mit diesem Stimulus mit Rate größer R)/(Gesamtanzahl der Trials für diesen Stimulus)
+def compare_rate(rate, avg_rate, signal):
+    bigger = sum(i > avg_rate for i in rate)
+    total_trials = int(list(signal.keys())[-1])
+    if total_trials != len(rate):
+        print("Trial count / rate lengh mismatch!")
+    p = bigger / total_trials
+    return p
+
+p1 = compare_rate(rate_1, avg_rate_1, sig1)
+p2 = compare_rate(rate_2, avg_rate_2, sig2)
+print(p1, p2)
+
+
+def plot_roc_curve(true_positives, false_positives):
+    y_true = np.concatenate([np.ones_like(true_positives), np.zeros_like(false_positives)])
+    y_scores = np.concatenate([true_positives, false_positives])
+    
+    fpr, tpr, thresholds = roc_curve(y_true, y_scores)
+    roc_auc = auc(fpr, tpr)
+
+    # Plot ROC curve
+    plt.figure(figsize=(10, 6))
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlabel('False Positive Rate (1 - Specificity)')
+    plt.ylabel('True Positive Rate (Sensitivity)')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend(loc='lower right')
+    plt.show()
+
+
+plot_roc_curve(tp_test, fp_test)
+
+
+def plot_roc_curves(true_positives_list, false_positives_list, labels):
+    plt.figure(figsize=(10, 6))
+    ax = plt.subplot()
+
+    for true_positives, false_positives, label in zip(true_positives_list, false_positives_list, labels):
+        y_true = np.concatenate([np.ones_like(true_positives), np.zeros_like(false_positives)])
+        y_scores = np.concatenate([true_positives, false_positives])
+
+        fpr, tpr, thresholds = roc_curve(y_true, y_scores)
+        roc_auc = auc(fpr, tpr)
+
+        # Plot ROC curve for each set of true positives and false positives
+        line, = ax.plot(fpr, tpr, lw=2, label=f'{label} (AUC = {roc_auc:.2f})')
+
+    ax.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    ax.set_xlabel('False Positive Rate (1 - Specificity)')
+    ax.set_ylabel('True Positive Rate (Sensitivity)')
+    ax.set_title('Receiver Operating Characteristic (ROC) Curves')
+
+    # Place the legend outside the plot, stacking items side by side
+    ax.legend(loc='upper left', bbox_to_anchor=(1, 1), ncol=2, borderaxespad=0.)
+
+    plt.show()
+
+
+items = os.listdir(path)
+cells = [item for item in items if os.path.isdir(os.path.join(path, item)) and item != 'stimuli']
+
+y = 0
+tp = []
+fp = []
+set = []
+for i in cells:
+    try:
+        tp.append(build_binary_array(calculate_rates(get_avg_rate(i, 1)[1], 1), lambda x: x > get_avg_rate(i, 1)[0]))
+        fp.append(build_binary_array(calculate_rates(get_avg_rate(i, 2)[1], 1), lambda x: x > get_avg_rate(i, 2)[0])) 
+        set.append(str(i))
+    except TypeError: # skip cells without annotated carrier frequency
+        continue
+
+plot_roc_curves(tp, fp, set)
+
