@@ -264,3 +264,34 @@ for i in cells:
 
 plot_roc_curves(tp, fp, set)
 
+
+
+
+def get_n(name): # likely redundant
+    try:
+        with open('./Resources/data/firing_rates', 'r') as file:
+            lines = file.readlines()
+
+            for i, line in enumerate(lines):
+                if name in line:
+                    # Check if there are two lines below the current line
+                    if i + 2 < len(lines):
+                        # Use regular expression to extract the integer following "n="
+                        n_value_match = re.search(r'\(n=(\d+)\)', lines[i + 2].strip())
+
+                        if n_value_match:
+                            n_value = int(n_value_match.group(1))
+                            return n_value
+                        else:
+                            print(f"Failed to extract 'n=' value from the line:\n{lines[i + 2].strip()}")
+                            return None
+                    else:
+                        print("Target string found, but there are not enough lines below.")
+                        return None
+
+            #print(f"Target string '{name}' not found.")
+            return None
+
+    except FileNotFoundError:
+        print(f"File '{name}' not found.")
+        return None
