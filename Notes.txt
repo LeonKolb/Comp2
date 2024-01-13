@@ -295,3 +295,21 @@ def get_n(name): # likely redundant
     except FileNotFoundError:
         print(f"File '{name}' not found.")
         return None
+
+
+def plot_roc(all_alpha, all_beta, names):
+
+    fig = plt.figure(figsize=(3,3),dpi=150)
+    ax = fig.add_axes([0.15,0.15,0.8,0.8])
+
+    for i in range(len(names)):
+        label = f'{names[i]} (AUC = {float(get_AUC(all_alpha[i], all_beta[i])):.3f})'
+        ax.plot(all_alpha[i], all_beta[i], label=label)
+
+    ax.plot([0,1],[0,1],'k--')
+    
+    ax.set_xlabel(r'$\alpha$')
+    ax.set_ylabel(r'$\beta$')
+    ax.legend(loc='upper left', bbox_to_anchor=(1.1, 1), ncol=3, borderaxespad=0., prop={'family': 'Consolas'})
+    
+    plt.show() 
