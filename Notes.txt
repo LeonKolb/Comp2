@@ -313,3 +313,50 @@ def plot_roc(all_alpha, all_beta, names):
     ax.legend(loc='upper left', bbox_to_anchor=(1.1, 1), ncol=3, borderaxespad=0., prop={'family': 'Consolas'})
     
     plt.show() 
+
+
+    def get_avg_rate(cell, signal): # modified to not write json files
+    dat_file_path = path+cell+'/'+cell+'_sig'+str(signal)+'_spikes.dat'
+    #json_output_path = cell+'_sig'+str(signal)+'.json'
+    json_data = adjust(parse_dat_to_json(read_dat_file(dat_file_path)), find_carrier(dat_file_path))
+    #write_json_file(json_data, json_output_path)
+    avg_rate = find_rate(cell+'_sig'+str(signal)+'_spikes.dat')
+    sig = json_data
+    #with open('./'+json_output_path, 'r') as file:
+        #sig = json.load(file)
+
+
+
+# Berechnung der Verteilung der Raten aus jedem Trial für beide Stimuli
+
+def calculate_rates(data_dict, trial_length):
+    rates = []
+
+    for key, array in data_dict.items():
+        rate = len(array) / trial_length
+        rates.append(int(rate))
+
+    return rates
+
+# trial lengh ist in 1/1000 msec = 1 sec
+rate_1 = calculate_rates(sig1, 1)
+rate_2 = calculate_rates(sig2, 1)
+
+
+#write_json_file(rate_1, "r1.json")
+#write_json_file(rate_2, "r2.json")
+
+
+
+
+def get_avg_rate(cell, signal):
+    dat_file_path = path+cell+'/'+cell+'_sig'+str(signal)+'_spikes.dat'
+    sig = adjust(parse_dat_to_json(read_dat_file(dat_file_path)), find_carrier(dat_file_path))
+    avg_rate = find_rate(cell+'_sig'+str(signal)+'_spikes.dat')
+
+    return avg_rate, sig
+
+
+
+#rate_1 = np.array(calculate_rates(get_avg_rate(i, 1)[1], 1))
+#rate_2 = np.array(calculate_rates(get_avg_rate(i, 2)[1], 1))
