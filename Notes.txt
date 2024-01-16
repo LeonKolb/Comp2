@@ -360,3 +360,25 @@ def get_avg_rate(cell, signal):
 
 #rate_1 = np.array(calculate_rates(get_avg_rate(i, 1)[1], 1))
 #rate_2 = np.array(calculate_rates(get_avg_rate(i, 2)[1], 1))
+
+def find_rate(name): # redundant
+    try:
+        with open('./Resources/data/firing_rates', 'r') as file:
+            lines = file.readlines()
+
+            for i, line in enumerate(lines):
+                if name in line:
+                    # Check if there are two lines below the current line
+                    if i + 2 < len(lines):
+                        result = re.search(r'firing rate = (\S+)', lines[i + 2].strip()).group(1)  # Remove leading/trailing whitespaces while stripping the output to just return the rate
+                        return float(result)
+                    else:
+                        print("Target string found, but there are not enough lines below.")
+                        return None
+
+            #print(f"Target string '{name}' not found.")
+            return None
+
+    except FileNotFoundError:
+        print(f"File '{name}' not found.")
+        return None
