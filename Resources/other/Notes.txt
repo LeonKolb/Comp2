@@ -1,0 +1,536 @@
+# redundant
+def find_local_maxima_timepoints(dat_file_path):
+    try:
+        # Load data from the .dat file using numpy
+        data = np.loadtxt(dat_file_path)
+
+        # Extract timepoints and voltage intensities
+        timepoints = data[:, 0]
+        voltage_intensities = data[:, 1]
+
+        # Find local maxima indices
+        maxima_indices = [i for i in range(1, len(voltage_intensities)-1) if voltage_intensities[i] > voltage_intensities[i-1] and voltage_intensities[i] > voltage_intensities[i+1]]
+
+        # Get the timepoints corresponding to the local maxima
+        maxima_timepoints = timepoints[maxima_indices]
+
+        return maxima_timepoints
+
+    except FileNotFoundError:
+        print(f"File '{dat_file_path}' not found.")
+        return None
+    
+# Example usage:
+dat_file_path = './Resources/data/stimuli/gaussModality_co200.dat'  # Replace with the actual path to your .dat file
+
+maxima_timepoints_result = find_local_maxima_timepoints(dat_file_path)
+
+if maxima_timepoints_result is not None and len(maxima_timepoints_result) > 0:
+    # Use a custom format to display timepoints without scientific notation
+    formatted_timepoints = ["{:.2f}".format(tp) for tp in maxima_timepoints_result]
+    print(f"Timepoints corresponding to local maxima: {formatted_timepoints} ({len(formatted_timepoints)} total)")
+
+    # Optional: Plot the data with local maxima marked
+    data = np.loadtxt(dat_file_path)
+    plt.plot(data[:, 0], data[:, 1], label='Voltage Intensity')
+    plt.scatter(maxima_timepoints_result, data[:, 1][np.searchsorted(data[:, 0], maxima_timepoints_result)], color='red', label='Local Maxima')
+    plt.xlabel('Timepoints')
+    plt.ylabel('Voltage Intensity')
+    plt.legend()
+    plt.xlim(-.5e5, 1.05e6)
+    plt.show()
+
+else:
+    print("No local maxima found.")
+
+
+
+
+
+import numpy as np
+
+def find_local_maxima(dat_file_path):
+    try:
+        data = np.loadtxt(dat_file_path)
+
+        # Extract timepoints and voltage intensities
+        timepoints = data[:, 0]
+        voltage_intensities = data[:, 1]
+
+        # Initialize boolean array for local maxima
+        is_local_maxima = np.full_like(voltage_intensities, False, dtype=bool)
+
+        # Find local maxima indices
+        for i in range(1, len(voltage_intensities) - 1):
+            if voltage_intensities[i] > voltage_intensities[i - 1] and voltage_intensities[i] > voltage_intensities[i + 1]:
+                is_local_maxima[i] = True
+
+        maxima_timepoints = timepoints[is_local_maxima]
+
+        # format timepoints
+        formatted_timepoints = ["{:.2f}".format(tp) for tp in maxima_timepoints]
+
+        return is_local_maxima, formatted_timepoints
+
+    except FileNotFoundError:
+        print(f"File '{dat_file_path}' not found.")
+        return None
+
+
+
+
+# Example usage:
+dat_file_path = './Resources/data/stimuli/gaussModality_co200.dat' 
+
+local_maxima_result, maxima_timepoints_result = find_local_maxima(dat_file_path)
+
+print("Boolean array for local maxima:", local_maxima_result)
+print("Timepoints corresponding to local maxima:", maxima_timepoints_result)
+
+
+
+
+def firing_prob(spikes, coherence, minHz, maxHz, dat): #dat ist bspw. ./03-01-16-ab/03-01-16-ab_sig1_spikes.dat
+
+    r=np.arange(minHz,maxHz,)
+
+    with open(path+dat, 'r') as file:
+        for line in file:
+            if spikes == True: 
+                mean_rate = findrate(dat) 
+            elif spikes == False:
+                mean_rate = 0
+    
+    std = 10. + 2/coherence
+    
+    p = 1./(np.sqrt(2.*np.pi)*std)*np.exp(-(r - mean_rate)**2/(2.*std**2))
+    p = p/np.sum(p)
+    return r, p
+
+
+
+def min_max_scaling(data):
+    min_val = np.min(data)
+    max_val = np.max(data)
+    scaled_data = (data - min_val) / (max_val - min_val)
+    return scaled_data
+
+
+#scale to cutoff freq?
+rate_1 = min_max_scaling(rate_1)
+rate_2 = min_max_scaling(rate_2)
+
+print(rate_1)
+print(rate_2)
+
+
+
+def z_score_normalization(data):
+    mean_val = np.mean(data)
+    std_dev = np.std(data)
+    normalized_data = (data - mean_val) / std_dev
+    return normalized_data
+
+# Example usage:
+firing_rates = np.array([10, 15, 12, 8, 20])
+normalized_firing_rates = z_score_normalization(firing_rates)
+
+print("Original Firing Rates:", firing_rates)
+print("Normalized Firing Rates (Z-Score Normalization):", normalized_firing_rates)
+
+
+def parse_dat_to_json_old(dat_lines):
+    json_data = []
+    current_trial = []
+    for line in dat_lines:
+        if line.startswith("#"):
+            continue  # Ignore lines starting with "#"
+        elif line.strip() == "":
+            if current_trial:
+                json_data.append(current_trial)
+                current_trial = []
+            else:
+                json_data.append([])  # Add an empty sublist
+        else:
+            timestamp = float(line.strip())
+            current_trial.append(timestamp)
+
+    if current_trial:
+        json_data.append(current_trial)
+    result=[]
+    for sublist in json_data:
+        if sublist == []:
+            consecutive_empty_sublists += 1
+            if consecutive_empty_sublists <= 1:
+                result.append(sublist)
+        else:
+            result.append(sublist)
+            consecutive_empty_sublists = 0
+
+    return result
+
+
+old ROC curve:
+
+# make binary arrays representing hits for true and false positives
+
+def build_binary_array(data, condition):
+
+    binary_array = [1 if condition(value) else 0 for value in data]
+    return binary_array
+
+
+tp_test = build_binary_array(rate_1, lambda x: x > avg_rate_1)
+fp_test = build_binary_array(rate_2, lambda x: x > avg_rate_2)
+print(tp_test)
+print(fp_test)
+
+
+# Berechnung der Wahrscheinlichkeiten mit 
+# p[r > R] = (Anzahl der Trials mit diesem Stimulus mit Rate größer R)/(Gesamtanzahl der Trials für diesen Stimulus)
+def compare_rate(rate, avg_rate, signal):
+    bigger = sum(i > avg_rate for i in rate)
+    total_trials = int(list(signal.keys())[-1])
+    if total_trials != len(rate):
+        print("Trial count / rate lengh mismatch!")
+    p = bigger / total_trials
+    return p
+
+p1 = compare_rate(rate_1, avg_rate_1, sig1)
+p2 = compare_rate(rate_2, avg_rate_2, sig2)
+print(p1, p2)
+
+
+def plot_roc_curve(true_positives, false_positives):
+    y_true = np.concatenate([np.ones_like(true_positives), np.zeros_like(false_positives)])
+    y_scores = np.concatenate([true_positives, false_positives])
+    
+    fpr, tpr, thresholds = roc_curve(y_true, y_scores)
+    roc_auc = auc(fpr, tpr)
+
+    # Plot ROC curve
+    plt.figure(figsize=(10, 6))
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (AUC = {roc_auc:.2f})')
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlabel('False Positive Rate (1 - Specificity)')
+    plt.ylabel('True Positive Rate (Sensitivity)')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend(loc='lower right')
+    plt.show()
+
+
+plot_roc_curve(tp_test, fp_test)
+
+
+def plot_roc_curves(true_positives_list, false_positives_list, labels):
+    plt.figure(figsize=(10, 6))
+    ax = plt.subplot()
+
+    for true_positives, false_positives, label in zip(true_positives_list, false_positives_list, labels):
+        y_true = np.concatenate([np.ones_like(true_positives), np.zeros_like(false_positives)])
+        y_scores = np.concatenate([true_positives, false_positives])
+
+        fpr, tpr, thresholds = roc_curve(y_true, y_scores)
+        roc_auc = auc(fpr, tpr)
+
+        # Plot ROC curve for each set of true positives and false positives
+        line, = ax.plot(fpr, tpr, lw=2, label=f'{label} (AUC = {roc_auc:.2f})')
+
+    ax.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    ax.set_xlabel('False Positive Rate (1 - Specificity)')
+    ax.set_ylabel('True Positive Rate (Sensitivity)')
+    ax.set_title('Receiver Operating Characteristic (ROC) Curves')
+
+    # Place the legend outside the plot, stacking items side by side
+    ax.legend(loc='upper left', bbox_to_anchor=(1, 1), ncol=2, borderaxespad=0.)
+
+    plt.show()
+
+
+items = os.listdir(path)
+cells = [item for item in items if os.path.isdir(os.path.join(path, item)) and item != 'stimuli']
+
+y = 0
+tp = []
+fp = []
+set = []
+for i in cells:
+    try:
+        tp.append(build_binary_array(calculate_rates(get_avg_rate(i, 1)[1], 1), lambda x: x > get_avg_rate(i, 1)[0]))
+        fp.append(build_binary_array(calculate_rates(get_avg_rate(i, 2)[1], 1), lambda x: x > get_avg_rate(i, 2)[0])) 
+        set.append(str(i))
+    except TypeError: # skip cells without annotated carrier frequency
+        continue
+
+plot_roc_curves(tp, fp, set)
+
+
+
+
+def get_n(name): # likely redundant
+    try:
+        with open('./Resources/data/firing_rates', 'r') as file:
+            lines = file.readlines()
+
+            for i, line in enumerate(lines):
+                if name in line:
+                    # Check if there are two lines below the current line
+                    if i + 2 < len(lines):
+                        # Use regular expression to extract the integer following "n="
+                        n_value_match = re.search(r'\(n=(\d+)\)', lines[i + 2].strip())
+
+                        if n_value_match:
+                            n_value = int(n_value_match.group(1))
+                            return n_value
+                        else:
+                            print(f"Failed to extract 'n=' value from the line:\n{lines[i + 2].strip()}")
+                            return None
+                    else:
+                        print("Target string found, but there are not enough lines below.")
+                        return None
+
+            #print(f"Target string '{name}' not found.")
+            return None
+
+    except FileNotFoundError:
+        print(f"File '{name}' not found.")
+        return None
+
+
+def plot_roc(all_alpha, all_beta, names):
+
+    fig = plt.figure(figsize=(3,3),dpi=150)
+    ax = fig.add_axes([0.15,0.15,0.8,0.8])
+
+    for i in range(len(names)):
+        label = f'{names[i]} (AUC = {float(get_AUC(all_alpha[i], all_beta[i])):.3f})'
+        ax.plot(all_alpha[i], all_beta[i], label=label)
+
+    ax.plot([0,1],[0,1],'k--')
+    
+    ax.set_xlabel(r'$\alpha$')
+    ax.set_ylabel(r'$\beta$')
+    ax.legend(loc='upper left', bbox_to_anchor=(1.1, 1), ncol=3, borderaxespad=0., prop={'family': 'Consolas'})
+    
+    plt.show() 
+
+
+    def get_avg_rate(cell, signal): # modified to not write json files
+    dat_file_path = path+cell+'/'+cell+'_sig'+str(signal)+'_spikes.dat'
+    #json_output_path = cell+'_sig'+str(signal)+'.json'
+    json_data = adjust(parse_dat_to_json(read_dat_file(dat_file_path)), find_carrier(dat_file_path))
+    #write_json_file(json_data, json_output_path)
+    avg_rate = find_rate(cell+'_sig'+str(signal)+'_spikes.dat')
+    sig = json_data
+    #with open('./'+json_output_path, 'r') as file:
+        #sig = json.load(file)
+
+
+
+# Berechnung der Verteilung der Raten aus jedem Trial für beide Stimuli
+
+def calculate_rates(data_dict, trial_length):
+    rates = []
+
+    for key, array in data_dict.items():
+        rate = len(array) / trial_length
+        rates.append(int(rate))
+
+    return rates
+
+# trial lengh ist in 1/1000 msec = 1 sec
+rate_1 = calculate_rates(sig1, 1)
+rate_2 = calculate_rates(sig2, 1)
+
+
+#write_json_file(rate_1, "r1.json")
+#write_json_file(rate_2, "r2.json")
+
+
+
+
+def get_avg_rate(cell, signal):
+    dat_file_path = path+cell+'/'+cell+'_sig'+str(signal)+'_spikes.dat'
+    sig = adjust(parse_dat_to_json(read_dat_file(dat_file_path)), find_carrier(dat_file_path))
+    avg_rate = find_rate(cell+'_sig'+str(signal)+'_spikes.dat')
+
+    return avg_rate, sig
+
+
+
+#rate_1 = np.array(calculate_rates(get_avg_rate(i, 1)[1], 1))
+#rate_2 = np.array(calculate_rates(get_avg_rate(i, 2)[1], 1))
+
+def find_rate(name): # redundant
+    try:
+        with open('./Resources/data/firing_rates', 'r') as file:
+            lines = file.readlines()
+
+            for i, line in enumerate(lines):
+                if name in line:
+                    # Check if there are two lines below the current line
+                    if i + 2 < len(lines):
+                        result = re.search(r'firing rate = (\S+)', lines[i + 2].strip()).group(1)  # Remove leading/trailing whitespaces while stripping the output to just return the rate
+                        return float(result)
+                    else:
+                        print("Target string found, but there are not enough lines below.")
+                        return None
+
+            #print(f"Target string '{name}' not found.")
+            return None
+
+    except FileNotFoundError:
+        print(f"File '{name}' not found.")
+        return None
+
+
+used_cell_1 = '03-01-15-aa'   
+used_spikes_1 = '_sig1_long.dat'
+dataset_path_1 = path + used_cell_1 +'/'+used_cell_1+ used_spikes_1
+
+filtered_lines_1 = []
+with open(dataset_path_1, 'r') as file:
+    for line in file:
+        if line.strip() and not line.startswith('#'): #check if line starts with # 
+            filtered_lines_1.append(line.strip()) #remove lines with # start
+
+numerical_value_1= np.array([float(value) for value in filtered_lines_1])
+
+#print(filtered_lines_1)
+
+
+used_cell_2 = '03-05-06-ab'
+used_spikes_2 = '_sig2_spikes.dat'
+dataset_path_2 = path + used_cell_2 + '/'+used_cell_2+ used_spikes_2
+
+filtered_lines_2 = []
+with open(dataset_path_2, 'r') as file:
+    for line in file:
+        if line.strip() and not line.startswith('#'): #check if line starts with # 
+            filtered_lines_2.append(line.strip()) #remove lines with # start
+            
+numerical_value_2= np.array([float(value) for value in filtered_lines_2])
+#print(filtered_lines_2)
+
+print('Array length of cell 1: ' + str(len(numerical_value_1)))
+print('Array length of cell 2: ' + str(len(numerical_value_2)))
+
+#def align_arrays(array_1, array_2):    #Determining the minimum&maximum lengths of arrays
+#    min_length = min(len(array_1), len(array_2))       
+   
+#    array_1_aligned = array_1[:min_length]
+#    array_2_aligned = array_2[:min_length]
+    # Trim both arrays to the minimum length
+
+#    return array_1_aligned, array_2_aligned
+
+#align_arrays(numerical_value_1, numerical_value_2)
+min_length = min(len(numerical_value_1), len(numerical_value_2))
+numerical_value_1 = numerical_value_1[:min_length]
+numerical_value_2 = numerical_value_2[:min_length]
+
+
+print('Testing min_length command')
+min_length = min(len(numerical_value_2),len(numerical_value_1))
+print(min_length)
+print('Testing lengths after def align_arrays')
+print('Numerical_value_1 length: ' + str(len(numerical_value_1)))
+print('Numerical_value_2 length: ' + str(len(numerical_value_2)))
+
+
+#print(stimulus_data_1)
+#print("")
+#print(stimulus_matrix_2)
+print('')
+print('Numerical_value_1 All values: ') 
+print(numerical_value_1)
+print('')
+print('Numerical_value_2 All values: ')
+print(numerical_value_2)
+
+covariance_matrix = np.cov(numerical_value_1, numerical_value_2, rowvar=False, )
+#^ Calculating covariance_matrix
+
+covariance_value = covariance_matrix[0,1] 
+#^ Extract the covariance between the two arrays
+
+mean_value_1 = np.mean(numerical_value_1)
+mean_value_2 = np.mean(numerical_value_2)
+
+#Issue here: Different lengths make the calculation scuffed.
+print('')
+print('Covariance_matrix value: ')
+print(covariance_matrix)
+print('')
+print('Covariance_value: ')
+print(covariance_value)
+#^ Important math note here:
+    #Covariance can range from negative infinity to infinity
+        #Negative covariance: If one decreases, the other increases
+        #Positive covariance: If one increases so does the other
+        #No Covariance: Random, stimuli increase/decrease is not correlated
+        #The bigger/smaller the value the stronger/weaker the correlation between stimuli.
+  
+#plt.subplots(figsize=(5,5)) 
+
+#plt.subplot(1,1,1)
+plt.imshow(covariance_matrix, cmap='summer', interpolation='nearest')
+for i in range(covariance_matrix.shape[0]):
+    for j in range(covariance_matrix.shape[1]):
+        plt.text(j, i, f'{covariance_matrix[i, j]:.2f}', ha='center', va='center', color='black', fontsize=8)      
+plt.title('Covariance Matrix')
+plt.colorbar(label='Covariance')
+plt.xticks([0,1], [used_cell_1, used_cell_2])
+plt.yticks([0,1], [used_cell_1, used_cell_2])
+plt.show()
+
+
+#plt.subplot(2,1,1)
+plt.scatter(numerical_value_1, numerical_value_2, s=5, c='darkblue', marker='o', label='Data Points')
+            #label=f'Covariance: {covariance_value:.4f}')
+                #^Alternative label
+plt.title("Covariance of used cells")
+plt.xlabel(used_cell_1)
+plt.ylabel(used_cell_2)
+plt.legend()
+#^ All single data points
+plt.show()
+
+
+correlation_matrix = np.corrcoef(numerical_value_1, numerical_value_2)
+#^ Correlation_matrix
+
+# Heatmap using seaborn
+sns.set(style="white")  
+plt.figure(figsize=(8, 6))
+sns.heatmap(correlation_matrix, annot=True, cmap='copper', fmt='.2f',
+            xticklabels=[used_cell_1, used_cell_2],
+            yticklabels=[used_cell_1, used_cell_2])
+plt.title('Correlation Matrix')
+plt.show()
+
+#After the intensities were determined, the experiment started. The first presentation of the stimulus was a long presentation
+#of ten seconds. The spike times of spikes emitted during this presentation are recorded in the files named '_long'. 
+#Thereafter, the first 1000 msec of the stimulus were presented multiple times (varying between 98 trials and 533 trials). 
+#These spikes are recorded in the files named '_spikes'.
+#^README lines 152-157
+
+
+#Attempting to create a ANOCVA plot
+plt.figure(figsize=(10,6))
+sns.pointplot(x=numerical_value_1, y=numerical_value_2) 
+    #x="Categorical Variable", y="Dependent Variable"
+plt.title('ANOCVA: Interaction Plot')
+plt.xlabel('')
+plt.show()
+
+
+
+
+
+# löscht alte json Daten (kann später entfernt werden)
+for filename in os.listdir(os.getcwd()):
+        if filename.endswith(".json"):
+            file_path = os.path.join(os.getcwd(), filename)
+            os.remove(file_path)
+            print(f"Deleted: {filename}")
